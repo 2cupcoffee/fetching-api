@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-900">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Form validation with API fetch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-family: "Poppins", sans-serif;
+      }
+    </style>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="h-full">
+    <div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
+      <div class="sm:mx-auto sm:w-full sm:max-w-2xl">
+        <h2 class="text-center text-3xl font-bold tracking-tight text-white">
+          User Information Form
+        </h2>
+      </div>
+
+      <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-2xl">
+        <form id="userForm" class="space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <input
+                id="firstName"
+                type="text"
+                placeholder="First Name"
+                class="block w-full rounded-md bg-white/5 px-3 py-2 text-white placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-500"
+              />
+              <p class="text-sm text-red-500 hidden" id="firstNameHelp">
+                First name is required.
+              </p>
+            </div>
+            <div>
+              <input
+                id="lastName"
+                type="text"
+                placeholder="Last Name"
+                class="block w-full rounded-md bg-white/5 px-3 py-2 text-white placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-500"
+              />
+              <p class="text-sm text-red-500 hidden" id="lastNameHelp">
+                Last name is required.
+              </p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <input
+                id="email"
+                type="email"
+                placeholder="Email"
+                class="block w-full rounded-md bg-white/5 px-3 py-2 text-white placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-500"
+              />
+              <p class="text-sm text-red-500 hidden" id="emailHelp">
+                Valid email is required.
+              </p>
+            </div>
+            <div>
+              <input
+                id="url"
+                type="url"
+                placeholder="URL"
+                class="block w-full rounded-md bg-white/5 px-3 py-2 text-white placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-500"
+              />
+              <p class="text-sm text-red-500 hidden" id="urlHelp">
+                Valid URL is required.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex flex-col sm:flex-row gap-4">
+              <input
+                id="ifsc"
+                type="text"
+                placeholder="IFSC Code"
+                class="block w-full rounded-md bg-white/5 px-3 py-2 text-white placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-500"
+              />
+              <button
+                type="button"
+                onclick="fetchIFSCInfo()"
+                class="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-400"
+              >
+                Search
+              </button>
+            </div>
+            <p class="text-sm text-red-500 hidden" id="ifscHelp">
+              Enter a valid Indian IFSC code (e.g., HDFC0001234).
+            </p>
+            <div id="ifscResult" class="text-sm text-indigo-300 mt-1"></div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-4">
+            <button
+              type="submit"
+              class="flex w-full justify-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-400"
+            >
+              Submit
+            </button>
+            <button
+              type="button"
+              onclick="clearForm()"
+              class="flex w-full justify-center rounded-md bg-gray-700 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-600"
+            >
+              Clear
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div
+      id="successModal"
+      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden"
+    >
+      <div class="bg-gray-800 p-6 rounded-xl shadow-lg animate-fade-in">
+        <p class="text-white">Form submitted successfully!</p>
+        <button
+          onclick="closeModal()"
+          class="mt-4 bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-white hover:text-gray-800"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+
+    <div id="ifsctext">
+      <p id="ifsctextContent" class="text-gray-800 font-medium"></p>
+    </div>
+
+    <style>
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.3s ease-out;
+      }
+    </style>
+
+    <script>
+      const form = document.getElementById("userForm");
+
+      function fetchIFSCInfo() {
+        const ifsc = document.getElementById("ifsc").value.trim().toUpperCase();
+        const resultDiv = document.getElementById("ifscResult");
+        const helpText = document.getElementById("ifscHelp");
+
+        if (!ifsc) {
+          helpText.textContent = "Please enter an IFSC code.";
+          helpText.classList.remove("hidden");
+          resultDiv.textContent = "";
+          return;
+        } else {
+          helpText.classList.add("hidden");
+        }
+
+        fetch(`https://ifsc.razorpay.com/${ifsc}`)
+          .then((res) => {
+            if (!res.ok) throw new Error("Invalid IFSC");
+            return res.json();
+          })
+          .then((data) => {
+            const info = `${data.BANK}, ${data.BRANCH}, ${data.ADDRESS}`;
+            resultDiv.textContent = info;
+            document.getElementById("ifsctextContent").textContent = info;
+            document.getElementById("ifsctext").classList.remove("hidden");
+          })
+          .catch(() => {
+            resultDiv.textContent = "";
+            helpText.textContent = "Invalid or unknown IFSC code.";
+            helpText.classList.remove("hidden");
+          });
+      }
+
+      function clearForm() {
+        form.reset();
+        document
+          .querySelectorAll("p.text-red-500")
+          .forEach((p) => p.classList.add("hidden"));
+        document.getElementById("ifscResult").textContent = "";
+      }
+
+      function closeModal() {
+        document.getElementById("successModal").classList.add("hidden");
+      }
+
+      function closeifsctext() {
+        document.getElementById("ifsctext").classList.add("hidden");
+      }
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        let valid = true;
+        const fields = [
+          { id: "firstName", msg: "First name is required." },
+          { id: "lastName", msg: "Last name is required." },
+          { id: "email", msg: "Valid email is required." },
+          { id: "url", msg: "Valid URL is required." },
+        ];
+
+        fields.forEach((f) => {
+          const val = document.getElementById(f.id).value.trim();
+          const help = document.getElementById(`${f.id}Help`);
+          if (!val) {
+            help.textContent = f.msg;
+            help.classList.remove("hidden");
+            valid = false;
+          } else {
+            help.classList.add("hidden");
+          }
+        });
+
+        if (valid) {
+          document.getElementById("successModal").classList.remove("hidden");
+        }
+      });
+    </script>
+  </body>
+</html>
